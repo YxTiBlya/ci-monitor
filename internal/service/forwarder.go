@@ -7,7 +7,6 @@ import (
 	"os"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 
 	"github.com/YxTiBlya/ci-monitor/pkg/models"
@@ -17,13 +16,13 @@ func (svc *Service) Forwarder(ch chan string) {
 	for data := range ch {
 		b, err := os.ReadFile(fmt.Sprintf("%s/pipeline.yaml", data))
 		if err != nil {
-			svc.log.Error("failed to open pipeline.yaml", zap.Error(err))
+			svc.log.Error().Err(err).Msg("failed to read pipeline.yaml")
 			continue
 		}
 
 		var pipeline []models.Pipeline
 		if err := yaml.Unmarshal(b, &pipeline); err != nil {
-			svc.log.Fatal("failed to unmarshal pipeline file", zap.Error(err))
+			svc.log.Error().Err(err).Msg("failed to unmarshal pipeline file")
 			continue
 		}
 
@@ -32,7 +31,7 @@ func (svc *Service) Forwarder(ch chan string) {
 			Pipeline: pipeline,
 		})
 		if err != nil {
-			svc.log.Fatal("failed to marshal msg", zap.Error(err))
+			svc.log.Error().Err(err).Msg("failed to marshal msg")
 			continue
 		}
 
@@ -43,10 +42,10 @@ func (svc *Service) Forwarder(ch chan string) {
 		}
 
 		if err := svc.Relations.QS.Publish(context.Background(), "", svc.cfg.QSName, false, false, msg); err != nil {
-			svc.log.Error("failed to publish data", zap.String("data", string(b)), zap.Error(err))
-			continue // if only 1 in channel thats raise error?
+			svc.log.Error().Err(err).Str("data", string(b)).Msg("failed to publish data")
+			continue
 		}
 
-		svc.log.Info("succesfully published data", zap.String("data", string(b)))
+		svc.log.Info().Str("data", string(b)).Msg("succesfully published data")
 	}
 }

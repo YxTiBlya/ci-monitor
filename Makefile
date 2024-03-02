@@ -1,5 +1,5 @@
-build-monitor:
-	@cd ./monitor && go build -o ../bin/monitor ./cmd/main/main.go
+build:
+	@go build -o ./bin/monitor ./cmd/main/main.go
 
-run-monitor: build-monitor
+run: build
 	@./bin/monitor --cfg config.yaml

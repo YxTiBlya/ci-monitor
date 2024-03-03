@@ -1,0 +1,6 @@
+[
+  {
+    name: "lint",
+    command: "golangci-lint run",
+  }
+]

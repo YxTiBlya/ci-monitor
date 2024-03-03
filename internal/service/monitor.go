@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/pingcap/errors"
-	"go.uber.org/zap"
 )
 
 func (svc *Service) Monitor(ch chan string) {
@@ -16,10 +15,9 @@ func (svc *Service) Monitor(ch chan string) {
 		for _, repo := range svc.cfg.Repositories {
 			updated, err := svc.check(repo)
 			if err != nil {
-				svc.log.Errorw("failed to check new commits",
-					zap.String("repo", repo),
-					zap.Error(err),
-				)
+				svc.log.Error().Err(err).
+					Str("repo", repo).
+					Msg("failed to check new commits")
 			}
 
 			if updated {

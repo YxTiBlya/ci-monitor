@@ -2,11 +2,12 @@ package main
 
 import (
 	"flag"
+	"log"
 	"os"
 
-	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 
+	"github.com/YxTiBlya/ci-core/logger"
 	"github.com/YxTiBlya/ci-core/rabbitmq"
 	"github.com/YxTiBlya/ci-core/scheduler"
 
@@ -22,34 +23,32 @@ type Config struct {
 var cfgPath string
 
 func init() {
+	logger.Init(logger.DevelopmentConfig)
 	flag.StringVar(&cfgPath, "cfg", "config.yaml", "app cfg path")
 	flag.Parse()
 }
 func main() {
-	logger := zap.Must(zap.NewDevelopment()).Sugar()
-
 	yamlFile, err := os.ReadFile(cfgPath)
 	if err != nil {
-		logger.Fatal("failed to open config file", zap.Error(err))
+		log.Fatal("failed to open config file ", err)
 	}
 
 	var cfg Config
 	if err := yaml.Unmarshal(yamlFile, &cfg); err != nil {
-		logger.Fatal("failed to unmarshal config file", zap.Error(err))
+		log.Fatal("failed to unmarshal config file ", err)
 	}
 	cfg.Service.QSName = cfg.QSName
 
 	rmq, err := rabbitmq.NewRabbitMQ(rabbitmq.WithConfig(cfg.RabbitMQ))
 	if err != nil {
-		logger.Fatal("failed to create rabbitmq", zap.Error(err))
+		log.Fatal("failed to create rabbitmq ", err)
 	}
 
-	svc := service.New(cfg.Service, logger, service.Relations{
+	svc := service.New(cfg.Service, service.Relations{
 		QS: rmq,
 	})
 
 	sch := scheduler.NewScheduler(
-		zap.Must(zap.NewDevelopment()).Sugar(),
 		scheduler.NewComponent("rabbitmq", rmq),
 		scheduler.NewComponent("service", svc),
 	)
